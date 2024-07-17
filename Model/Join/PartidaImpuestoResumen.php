@@ -132,22 +132,8 @@ class PartidaImpuestoResumen extends JoinModel
     protected function loadFromData($data)
     {
         parent::loadFromData($data);
-
-        if ($this->iva > 0 && $this->recargo > 0) {
-            $this->cuotaiva = $this->baseimponible * ($this->iva / 100.0);
-            $this->cuotarecargo = $this->baseimponible * ($this->recargo / 100.0);
-        } elseif ($this->iva > 0) {
-            $this->cuotaiva = $this->codcuentaesp === 'IVAREP'
-                ? $data['haber'] - $data['debe']
-                : $data['debe'] - $data['haber'];
-            $this->cuotarecargo = 0.0;
-        } else {
-            $this->cuotarecargo = $this->codcuentaesp === 'IVAREP'
-                ? $data['haber'] - $data['debe']
-                : $data['debe'] - $data['haber'];
-            $this->cuotaiva = 0.0;
-        }
-
+        $this->cuotaiva = $this->baseimponible * ($this->iva / 100.0);
+        $this->cuotarecargo = $this->baseimponible * ($this->recargo / 100.0);
         $this->total = $this->baseimponible + $this->cuotaiva + $this->cuotarecargo;
     }
 }
