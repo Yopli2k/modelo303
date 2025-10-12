@@ -1,7 +1,7 @@
 <?php
 /**
  * This file is part of Modelo303 plugin for FacturaScripts
- * Copyright (C) 2017-2024 Carlos Garcia Gomez <carlos@facturascripts.com>
+ * Copyright (C) 2017-2025 Carlos Garcia Gomez <carlos@facturascripts.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
@@ -45,7 +45,7 @@ class PartidaImpuestoResumen extends JoinModel
     /**
      * Reset the values of all model view properties.
      */
-    public function clear()
+    public function clear(): void
     {
         parent::clear();
         $this->baseimponible = 0.0;
@@ -87,8 +87,9 @@ class PartidaImpuestoResumen extends JoinModel
         return 'asientos.codejercicio,'
             . 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp),'
             . 'cuentasesp.descripcion,'
-            . 'partidas.idsubcuenta,'
             . 'partidas.codsubcuenta,'
+            . 'subcuentas.descripcion,'
+            . 'partidas.idsubcuenta,'
             . 'partidas.iva,'
             . 'partidas.recargo';
     }
@@ -129,7 +130,7 @@ class PartidaImpuestoResumen extends JoinModel
      *
      * @param array $data
      */
-    protected function loadFromData($data)
+    protected function loadFromData(array $data): void
     {
         parent::loadFromData($data);
         $this->cuotaiva = $this->baseimponible * ($this->iva / 100.0);

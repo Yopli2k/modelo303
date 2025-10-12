@@ -68,7 +68,7 @@
     <rows>
         <row type="footer">
             <group name="actions"/>
-            <group name="summary" html="Block/PartidaImpuestoResumen.html.twig"></group>
+            <group name="summary" html="Block/PartidaImpuestoResumen.html.twig"/>
         </row>
         <row type="status">
             <option color="warning" fieldname="codcuentaesp">IVASOP</option>

@@ -11,7 +11,7 @@ foreach (explode(',', $langs) as $lang) {
     $files[] = $lang . '.json';
 }
 foreach (scandir(__DIR__, SCANDIR_SORT_ASCENDING) as $filename) {
-    if (is_file($filename) && substr($filename, -5) === '.json' && false === in_array($filename, $files)) {
+    if (is_file($filename) && str_ends_with($filename, '.json') && false === in_array($filename, $files)) {
         $files[] = $filename;
     }
 }

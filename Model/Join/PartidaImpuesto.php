@@ -42,7 +42,7 @@ class PartidaImpuesto extends JoinModel
     /**
      * Reset the values of all model view properties.
      */
-    public function clear()
+    public function clear(): void
     {
         parent::clear();
         $this->baseimponible = 0.00;
@@ -57,12 +57,12 @@ class PartidaImpuesto extends JoinModel
         $where = [new DataBaseWhere('idasiento', $this->idasiento ?? 0)];
 
         $facturaCliente = new FacturaCliente();
-        if ($facturaCliente->loadFromCode('', $where)) {
+        if ($facturaCliente->loadWhere($where)) {
             return $facturaCliente;
         }
 
         $facturaProveedor = new FacturaProveedor();
-        $facturaProveedor->loadFromCode('', $where);
+        $facturaProveedor->loadWhere($where);
         return $facturaProveedor;
     }
 
@@ -123,7 +123,7 @@ class PartidaImpuesto extends JoinModel
      *
      * @param array $data
      */
-    protected function loadFromData(array $data)
+    protected function loadFromData(array $data): void
     {
         parent::loadFromData($data);
 
@@ -134,7 +134,7 @@ class PartidaImpuesto extends JoinModel
         // si el campo factura está vacío, buscamos la factura con este asiento
         if (empty($this->factura)) {
             $factura = $this->getFactura();
-            if ($factura->primaryColumnValue()) {
+            if ($factura->id()) {
                 $this->factura = $factura->numero;
                 $this->documento = $factura->codigo;
                 $this->codserie = $factura->codserie;
