@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 namespace FacturaScripts\Plugins\Modelo303\Model\Join;
 
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
@@ -32,8 +31,11 @@ use FacturaScripts\Dinamic\Model\FacturaProveedor;
  * @author Carlos García Gómez           <carlos@facturascripts.com>
  *
  * @property float $baseimponible
+ * @property string $documento
+ * @property string $codserie
  * @property float $cuotaiva
  * @property float $cuotarecargo
+ * @property string $factura
  * @property float $iva
  * @property float $recargo
  */
@@ -52,11 +54,20 @@ class PartidaImpuesto extends JoinModel
         $this->cuotarecargo = 0.00;
     }
 
+    /**
+     * Get the invoice related to this accounting entry.
+     *
+     * @return BusinessDocument
+     */
     protected function getFactura(): BusinessDocument
     {
-        $where = [new DataBaseWhere('idasiento', $this->idasiento ?? 0)];
-
+        $idasiento = $this->idasiento ?? 0;
         $facturaCliente = new FacturaCliente();
+        if (empty($idasiento)) {
+            return $facturaCliente;
+        }
+
+        $where = [new DataBaseWhere('idasiento', $idasiento)];
         if ($facturaCliente->loadWhere($where)) {
             return $facturaCliente;
         }
@@ -72,17 +83,17 @@ class PartidaImpuesto extends JoinModel
     protected function getFields(): array
     {
         return [
+            'codejercicio' => 'asientos.codejercicio',
+            'fecha' => 'asientos.fecha',
+            'idasiento' => 'asientos.idasiento',
+
             'baseimponible' => 'partidas.baseimponible',
             'cifnif' => 'partidas.cifnif',
             'codcontrapartida' => 'partidas.codcontrapartida',
-            'codcuentaesp' => 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)',
-            'codejercicio' => 'asientos.codejercicio',
             'concepto' => 'partidas.concepto',
             'codserie' => 'partidas.codserie',
             'documento' => 'partidas.documento',
             'factura' => 'partidas.factura',
-            'fecha' => 'asientos.fecha',
-            'idasiento' => 'asientos.idasiento',
             'idcontrapartida' => 'partidas.idcontrapartida',
             'idpartida' => 'partidas.idpartida',
             'iva' => 'partidas.iva',
@@ -90,6 +101,8 @@ class PartidaImpuesto extends JoinModel
             'recargo' => 'partidas.recargo',
             'debe' => 'partidas.debe',
             'haber' => 'partidas.haber',
+
+            'codcuentaesp' => 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)',
         ];
     }
 
@@ -114,7 +127,8 @@ class PartidaImpuesto extends JoinModel
             'asientos',
             'partidas',
             'subcuentas',
-            'cuentas'
+            'cuentas',
+            'series',
         ];
     }
 
@@ -127,29 +141,56 @@ class PartidaImpuesto extends JoinModel
     {
         parent::loadFromData($data);
 
+        // Si tenemos IVA y recargo en el mismo movimiento,
+        // no sabemos cuál es cuál, asi que los calculamos
+        // a partir de la base imponible.
         if ($this->iva > 0 && $this->recargo > 0) {
             $this->cuotaiva = $this->baseimponible * ($this->iva / 100.0);
             $this->cuotarecargo = $this->baseimponible * ($this->recargo / 100.0);
-        } elseif ($this->iva > 0) {
-            $this->cuotaiva = $this->codcuentaesp === 'IVAREP'
-                ? $data['haber'] - $data['debe']
-                : $data['debe'] - $data['haber'];
+            $diff = round($this->getCuota($data['debe'], $data['haber']) - ($this->cuotaiva + $this->cuotarecargo), 2);
+            if ($diff !== 0.0) {
+                $this->cuotaiva +=  $diff; // Ajustamos la cuota de IVA
+            }
+        } elseif ($this->iva > 0) {        // Solo tenemos IVA
+            $this->cuotaiva = $this->getCuota($data['debe'], $data['haber']);
             $this->cuotarecargo = 0.0;
-        } else {
-            $this->cuotarecargo = $this->codcuentaesp === 'IVAREP'
-                ? $data['haber'] - $data['debe']
-                : $data['debe'] - $data['haber'];
+        } else {                           // Solo tenemos recargo
+            $this->cuotarecargo = $this->getCuota($data['debe'], $data['haber']);
             $this->cuotaiva = 0.0;
         }
 
         // si el campo factura está vacío, buscamos la factura con este asiento
         if (empty($this->factura)) {
-            $factura = $this->getFactura();
-            if ($factura->id()) {
-                $this->factura = $factura->numero;
-                $this->documento = $factura->codigo;
-                $this->codserie = $factura->codserie;
-            }
+            $this->setInvoiceData();
+        }
+    }
+
+    /**
+     * Get the VAT or surcharge amount from the debit or credit value.
+     *
+     * @param $debe
+     * @param $haber
+     * @return float
+     */
+    private function getCuota($debe, $haber): float
+    {
+        return empty($debe)
+            ? (float)$haber ?? 0.0
+            : (float)$debe  ?? 0.0;
+    }
+
+    /**
+     * Set invoice data (factura, documento, codserie) if available.
+     *
+     * @return void
+     */
+    private function setInvoiceData(): void
+    {
+        $factura = $this->getFactura();
+        if ($factura->id()) {
+            $this->factura = $factura->numero;
+            $this->documento = $factura->codigo;
+            $this->codserie = $factura->codserie;
         }
     }
 }

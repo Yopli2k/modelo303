@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 namespace FacturaScripts\Plugins\Modelo303\Model\Join;
 
 use FacturaScripts\Core\Model\Base\JoinModel;
@@ -41,7 +40,6 @@ use FacturaScripts\Core\Model\Base\JoinModel;
  */
 class PartidaImpuestoResumen extends JoinModel
 {
-
     /**
      * Reset the values of all model view properties.
      */
@@ -64,14 +62,17 @@ class PartidaImpuestoResumen extends JoinModel
     protected function getFields(): array
     {
         return [
-            'baseimponible' => 'SUM(partidas.baseimponible)',
-            'codcuentaesp' => 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)',
             'codejercicio' => 'asientos.codejercicio',
+
             'codsubcuenta' => 'partidas.codsubcuenta',
             'descripcion' => 'subcuentas.descripcion',
             'idsubcuenta' => 'partidas.idsubcuenta',
             'iva' => 'partidas.iva',
             'recargo' => 'partidas.recargo',
+
+            'codcuentaesp' => 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)',
+
+            'baseimponible' => 'SUM(partidas.baseimponible)',
             'debe' => 'SUM(partidas.debe)',
             'haber' => 'SUM(partidas.haber)',
         ];
@@ -85,13 +86,12 @@ class PartidaImpuestoResumen extends JoinModel
     protected function getGroupFields(): string
     {
         return 'asientos.codejercicio,'
-            . 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp),'
-            . 'cuentasesp.descripcion,'
             . 'partidas.codsubcuenta,'
             . 'subcuentas.descripcion,'
             . 'partidas.idsubcuenta,'
             . 'partidas.iva,'
-            . 'partidas.recargo';
+            . 'partidas.recargo,'
+            . 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)';
     }
 
     /**
@@ -121,7 +121,8 @@ class PartidaImpuestoResumen extends JoinModel
             'partidas',
             'subcuentas',
             'cuentas',
-            'cuentasesp'
+            'cuentasesp',
+            'series',
         ];
     }
 
@@ -134,21 +135,38 @@ class PartidaImpuestoResumen extends JoinModel
     {
         parent::loadFromData($data);
 
+        // Si tenemos IVA y recargo en el mismo movimiento,
+        // no sabemos cuál es cuál, asi que los calculamos
+        // a partir de la base imponible.
         if ($this->iva > 0 && $this->recargo > 0) {
             $this->cuotaiva = $this->baseimponible * ($this->iva / 100.0);
             $this->cuotarecargo = $this->baseimponible * ($this->recargo / 100.0);
-        } elseif ($this->iva > 0) {
-            $this->cuotaiva = $this->codcuentaesp === 'IVAREP'
-                ? $data['haber'] - $data['debe']
-                : $data['debe'] - $data['haber'];
+            $diff = round($this->getCuota($data['debe'], $data['haber']) - ($this->cuotaiva + $this->cuotarecargo), 2);
+            if ($diff !== 0.0) {
+                $this->cuotaiva +=  $diff; // Ajustamos la cuota de IVA
+            }
+        } elseif ($this->iva > 0) {        // Solo tenemos IVA
+            $this->cuotaiva = $this->getCuota($data['debe'], $data['haber']);
             $this->cuotarecargo = 0.0;
-        } else {
-            $this->cuotarecargo = $this->codcuentaesp === 'IVAREP'
-                ? $data['haber'] - $data['debe']
-                : $data['debe'] - $data['haber'];
+        } else {                           // Solo tenemos recargo
+            $this->cuotarecargo = $this->getCuota($data['debe'], $data['haber']);
             $this->cuotaiva = 0.0;
         }
 
         $this->total = $this->baseimponible + $this->cuotaiva + $this->cuotarecargo;
+    }
+
+    /**
+     * Get the VAT or surcharge amount from the debit or credit value.
+     *
+     * @param $debe
+     * @param $haber
+     * @return float
+     */
+    private function getCuota($debe, $haber): float
+    {
+        return empty($debe)
+            ? (float)$haber ?? 0.0
+            : (float)$debe  ?? 0.0;
     }
 }
