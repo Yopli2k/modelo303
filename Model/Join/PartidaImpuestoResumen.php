@@ -70,7 +70,6 @@ class PartidaImpuestoResumen extends JoinModel
             'recargo' => 'partidas.recargo',
 
             'codcuentaesp' => 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)',
-            'descripcion' => 'subcuentas.descripcion',
 
             'baseimponible' => 'SUM(partidas.baseimponible)',
             'debe' => 'SUM(partidas.debe)',
@@ -89,9 +88,8 @@ class PartidaImpuestoResumen extends JoinModel
             . 'partidas.codsubcuenta,'
             . 'partidas.idsubcuenta,'
             . 'partidas.iva,'
-            . 'partidas.recargo'
-            . 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp),'
-            . 'subcuentas.descripcion,';
+            . 'partidas.recargo,'
+            . 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)';
     }
 
     /**
@@ -134,21 +132,39 @@ class PartidaImpuestoResumen extends JoinModel
     protected function loadFromData(array $data): void
     {
         parent::loadFromData($data);
+
+        // Si tenemos IVA y recargo en el mismo movimiento,
+        // no sabemos cuál es cuál, asi que los calculamos
+        // a partir de la base imponible.
         if ($this->iva > 0 && $this->recargo > 0) {
             $this->cuotaiva = $this->baseimponible * ($this->iva / 100.0);
             $this->cuotarecargo = $this->baseimponible * ($this->recargo / 100.0);
-        } elseif ($this->iva > 0) {
-            $this->cuotaiva = $this->codcuentaesp === 'IVAREP'
-                ? $data['haber'] - $data['debe']
-                : $data['debe'] - $data['haber'];
+            $diff = round($this->getCuota($data['debe'], $data['haber']) - ($this->cuotaiva + $this->cuotarecargo), 2);
+            if ($diff !== 0.0) {
+                $this->cuotaiva +=  $diff; // Ajustamos la cuota de IVA
+            }
+        } elseif ($this->iva > 0) {        // Solo tenemos IVA
+            $this->cuotaiva = $this->getCuota($data['debe'], $data['haber']);
             $this->cuotarecargo = 0.0;
-        } else {
-            $this->cuotarecargo = $this->codcuentaesp === 'IVAREP'
-                ? $data['haber'] - $data['debe']
-                : $data['debe'] - $data['haber'];
+        } else {                           // Solo tenemos recargo
+            $this->cuotarecargo = $this->getCuota($data['debe'], $data['haber']);
             $this->cuotaiva = 0.0;
         }
 
         $this->total = $this->baseimponible + $this->cuotaiva + $this->cuotarecargo;
+    }
+
+    /**
+     * Get the VAT or surcharge amount from the debit or credit value.
+     *
+     * @param $debe
+     * @param $haber
+     * @return float
+     */
+    private function getCuota($debe, $haber): float
+    {
+        return empty($debe)
+            ? (float)$haber ?? 0.0
+            : (float)$debe  ?? 0.0;
     }
 }

@@ -17,7 +17,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 namespace FacturaScripts\Plugins\Modelo303\Controller;
-
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
 use FacturaScripts\Core\DataSrc\Empresas;
 use FacturaScripts\Core\Lib\ExtendedController\ListController;
@@ -30,6 +29,11 @@ use FacturaScripts\Core\Tools;
  */
 class ListRegularizacionImpuesto extends ListController
 {
+    /**
+     * Return the basic data for this page.
+     *
+     * @return array
+     */
     public function getPageData(): array
     {
         $data = parent::getPageData();
@@ -48,29 +52,31 @@ class ListRegularizacionImpuesto extends ListController
         $this->createViewsModel390();
     }
 
-    protected function createViewsModel303(string $viewName = 'ListRegularizacionImpuesto'): void
+    protected function createViewsModel303(): void
     {
         $exercises = $this->codeModel->all('ejercicios', 'codejercicio', 'nombre');
-        $this->addView($viewName, 'RegularizacionImpuesto', 'model-303', 'fa-solid fa-book')
-            ->addOrderBy(['fechainicio'], 'start-date', 2)
-            ->addOrderBy(['codejercicio||periodo'], 'period')       // JOSEA: curiosidad, que hace el ||
+        $this->addView('ListRegularizacionImpuesto', 'RegularizacionImpuesto', 'model-303', 'fa-solid fa-book')
+            // Search and Order
             ->addSearchFields(['codsubcuentaacr', 'codsubcuentadeu'])
-            // añadimos filtros
+            ->addOrderBy(['fechainicio'], 'start-date', 2)
+            ->addOrderBy(['codejercicio||periodo'], 'period')
+            // Filters
             ->addFilterSelect('idempresa', 'company', 'idempresa', Empresas::codeModel())
             ->addFilterSelect('codejercicio', 'exercise', 'codejercicio', $exercises)
             ->addFilterSelectWhere('status', [
-                    ['label' => Tools::lang()->trans('model-303'), 'where' => [new DataBaseWhere('periodo', 'Y', '!=')]]
+                ['label' => Tools::lang()->trans('model-303'), 'where' => [new DataBaseWhere('periodo', 'Y', '!=')]]
             ]);
     }
 
-    protected function createViewsModel390(string $viewName = 'ListRegularizacionImpuesto-390'): void
+    protected function createViewsModel390(): void
     {
         $exercises = $this->codeModel->all('ejercicios', 'codejercicio', 'nombre');
-        $this->addView($viewName, 'RegularizacionImpuesto', 'model-390', 'fa-solid fa-book')
+        $this->addView('ListRegularizacionImpuesto-390', 'RegularizacionImpuesto', 'model-390', 'fa-solid fa-book')
+            // Search and Order
+            ->addSearchFields(['codsubcuentaacr', 'codsubcuentadeu'])
             ->addOrderBy(['fechainicio'], 'start-date', 2)
             ->addOrderBy(['codejercicio||periodo'], 'period')
-            ->addSearchFields(['codsubcuentaacr', 'codsubcuentadeu'])
-            // añadimos filtros
+            // Filters
             ->addFilterSelect('idempresa', 'company', 'idempresa', Empresas::codeModel())
             ->addFilterSelect('codejercicio', 'exercise', 'codejercicio', $exercises)
             ->addFilterSelectWhere('status', [
