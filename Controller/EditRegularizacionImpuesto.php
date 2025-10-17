@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 namespace FacturaScripts\Plugins\Modelo303\Controller;
 
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
@@ -96,7 +95,7 @@ class EditRegularizacionImpuesto extends EditController
     protected function createAccountingEntryAction(): void
     {
         $reg = new RegularizacionImpuesto();
-        $code = $this->request->get('code');
+        $code = $this->request->input('code');
         if (false === $reg->load($code)) {
             Tools::log()->warning('record-not-found');
             return;
@@ -201,7 +200,7 @@ class EditRegularizacionImpuesto extends EditController
 
     protected function getListPartidaImpuesto(BaseView $view, int $group): void
     {
-        $id = $this->getViewModelValue($this->getMainViewName(), 'idregiva');
+        $id = $this->getModel()->idregiva;
         if (!empty($id)) {
             $where = $this->getPartidaImpuestoWhere($group);
             $orderBy = ['asientos.fecha' => 'ASC', 'partidas.codserie' => 'ASC', 'partidas.factura' => 'ASC'];
@@ -211,6 +210,9 @@ class EditRegularizacionImpuesto extends EditController
 
     protected function getListPartidaImpuestoResumen(BaseView $view): void
     {
+        // JOSEA: Me parece complicado ... Quizás una explicación de lo que hace
+        // y por qué se hace así ayudaría a entenderlo mejor.
+
         $impuestos = Impuestos::all();
 
         // obtenemos los codigos de subcuentas de los impuestos
@@ -440,7 +442,7 @@ class EditRegularizacionImpuesto extends EditController
 
     protected function setCreateAcEntryButton(string $viewName): void
     {
-        $idasiento = $this->getViewModelValue($this->getMainViewName(), 'idasiento');
+        $idasiento = $this->getModel()->idasiento ?? 0;
         if (empty($idasiento)) {
             $this->addButton($viewName, [
                 'action' => 'create-accounting-entry',

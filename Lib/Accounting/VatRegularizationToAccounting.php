@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 namespace FacturaScripts\Plugins\Modelo303\Lib\Accounting;
 
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
@@ -45,7 +44,7 @@ class VatRegularizationToAccounting
 
     public function generate(RegularizacionImpuesto &$reg): bool
     {
-        if(false === $this->checkInvoicesWithoutAccEntry($reg)){
+        if (false === $this->checkInvoicesWithoutAccEntry($reg)){
             Tools::log()->warning('invoices-without-acc-entry');
             return false;
         }
@@ -63,7 +62,8 @@ class VatRegularizationToAccounting
 
         if ($this->addAccountingTaxLines($accEntry, $reg) &&
             $this->addAccountingResultLine($accEntry, $reg) &&
-            $accEntry->isBalanced()) {
+            $accEntry->isBalanced()
+        ) {
             $accEntry->importe = max([$this->debit, $this->credit]);
             if ($accEntry->save()) {
                 $reg->idasiento = $accEntry->id();
@@ -127,6 +127,7 @@ class VatRegularizationToAccounting
     {
         $accTools = new SubAccountTools();
         $field = 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)';
+        // JOSEA: No comprueba si la serie tiene impuestos.
         $where = [
             new DataBaseWhere('asientos.codejercicio', $reg->codejercicio),
             new DataBaseWhere('asientos.fecha', $reg->fechainicio, '>='),
@@ -175,11 +176,9 @@ class VatRegularizationToAccounting
             new DataBaseWhere('idasiento', 'IS NULL')
         ];
 
-        $facturasClienteSinAsiento = FacturaCliente::all($where);
-
-        $facturasProveedorSinAsiento = FacturaProveedor::all($where);
-
-        if (count($facturasClienteSinAsiento) > 0 || count($facturasProveedorSinAsiento) > 0) {
+        if (false === empty(FacturaCliente::all($where, [], 0, 1))
+            || false === empty(FacturaProveedor::all($where, [], 0, 1))
+        ) {
             return false;
         }
 

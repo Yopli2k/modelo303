@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 namespace FacturaScripts\Plugins\Modelo303\Model\Join;
 
 use FacturaScripts\Core\Model\Base\JoinModel;
@@ -41,7 +40,6 @@ use FacturaScripts\Core\Model\Base\JoinModel;
  */
 class PartidaImpuestoResumen extends JoinModel
 {
-
     /**
      * Reset the values of all model view properties.
      */
@@ -64,14 +62,17 @@ class PartidaImpuestoResumen extends JoinModel
     protected function getFields(): array
     {
         return [
-            'baseimponible' => 'SUM(partidas.baseimponible)',
-            'codcuentaesp' => 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)',
             'codejercicio' => 'asientos.codejercicio',
+
             'codsubcuenta' => 'partidas.codsubcuenta',
-            'descripcion' => 'subcuentas.descripcion',
             'idsubcuenta' => 'partidas.idsubcuenta',
             'iva' => 'partidas.iva',
             'recargo' => 'partidas.recargo',
+
+            'codcuentaesp' => 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)',
+            'descripcion' => 'subcuentas.descripcion',
+
+            'baseimponible' => 'SUM(partidas.baseimponible)',
             'debe' => 'SUM(partidas.debe)',
             'haber' => 'SUM(partidas.haber)',
         ];
@@ -85,13 +86,12 @@ class PartidaImpuestoResumen extends JoinModel
     protected function getGroupFields(): string
     {
         return 'asientos.codejercicio,'
-            . 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp),'
-            . 'cuentasesp.descripcion,'
             . 'partidas.codsubcuenta,'
-            . 'subcuentas.descripcion,'
             . 'partidas.idsubcuenta,'
             . 'partidas.iva,'
-            . 'partidas.recargo';
+            . 'partidas.recargo'
+            . 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp),'
+            . 'subcuentas.descripcion,';
     }
 
     /**
@@ -121,7 +121,8 @@ class PartidaImpuestoResumen extends JoinModel
             'partidas',
             'subcuentas',
             'cuentas',
-            'cuentasesp'
+            'cuentasesp',
+            'series',
         ];
     }
 
@@ -133,7 +134,6 @@ class PartidaImpuestoResumen extends JoinModel
     protected function loadFromData(array $data): void
     {
         parent::loadFromData($data);
-
         if ($this->iva > 0 && $this->recargo > 0) {
             $this->cuotaiva = $this->baseimponible * ($this->iva / 100.0);
             $this->cuotarecargo = $this->baseimponible * ($this->recargo / 100.0);

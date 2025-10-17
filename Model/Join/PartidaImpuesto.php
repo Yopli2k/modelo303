@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 namespace FacturaScripts\Plugins\Modelo303\Model\Join;
 
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
@@ -52,12 +51,19 @@ class PartidaImpuesto extends JoinModel
         $this->cuotarecargo = 0.00;
     }
 
+    /**
+     * Get the invoice (customer or supplier) related to this accounting entry.
+     * If there is no invoice related, it returns an empty BusinessDocument.
+     *
+     * @return BusinessDocument
+     */
     protected function getFactura(): BusinessDocument
     {
-        $where = [new DataBaseWhere('idasiento', $this->idasiento ?? 0)];
+        $idasiento = $this->idasiento ?? 0;
+        $where = [new DataBaseWhere('idasiento', $idasiento)];
 
         $facturaCliente = new FacturaCliente();
-        if ($facturaCliente->loadWhere($where)) {
+        if (empty($idasiento) || $facturaCliente->loadWhere($where)) {
             return $facturaCliente;
         }
 
@@ -126,16 +132,16 @@ class PartidaImpuesto extends JoinModel
     protected function loadFromData(array $data): void
     {
         parent::loadFromData($data);
-
         if ($this->iva > 0 && $this->recargo > 0) {
             $this->cuotaiva = $this->baseimponible * ($this->iva / 100.0);
             $this->cuotarecargo = $this->baseimponible * ($this->recargo / 100.0);
-        } elseif ($this->iva > 0) {
+        } elseif ($this->iva > 0) { // JOSEA: Por qué si tiene IVA no se calcula sobre la baseimponible?
+            // Coger debe o haber que haya informado el usuario en la partida
             $this->cuotaiva = $this->codcuentaesp === 'IVAREP'
                 ? $data['haber'] - $data['debe']
                 : $data['debe'] - $data['haber'];
             $this->cuotarecargo = 0.0;
-        } else {
+        } else {  // Para cuando se utiliza una subcuenta para el recargo distinta al IVA
             $this->cuotarecargo = $this->codcuentaesp === 'IVAREP'
                 ? $data['haber'] - $data['debe']
                 : $data['debe'] - $data['haber'];
