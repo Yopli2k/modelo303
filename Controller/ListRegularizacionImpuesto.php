@@ -36,22 +36,22 @@ class ListRegularizacionImpuesto extends ListController
         $data = parent::getPageData();
         $data['menu'] = 'reports';
         $data['title'] = 'model-303-390';
-        $data['icon'] = 'fa-solid fa-book';
+        $data['icon'] = 'fas fa-book';
         return $data;
     }
 
     /**
      * Load views
      */
-    protected function createViews(): void
+    protected function createViews()
     {
         $this->createViewsModel303();
         $this->createViewsModel390();
     }
 
-    protected function createViewsModel303(string $viewName = 'ListRegularizacionImpuesto'): void
+    protected function createViewsModel303(string $viewName = 'ListRegularizacionImpuesto')
     {
-        $this->addView($viewName, 'RegularizacionImpuesto', 'model-303', 'fa-solid fa-book')
+        $this->addView($viewName, 'RegularizacionImpuesto', 'model-303', 'fas fa-book')
             ->addOrderBy(['fechainicio'], 'start-date', 2)
             ->addOrderBy(['codejercicio||periodo'], 'period')
             ->addSearchFields(['codsubcuentaacr', 'codsubcuentadeu']);
@@ -67,9 +67,9 @@ class ListRegularizacionImpuesto extends ListController
         $this->addFilterSelect($viewName, 'codejercicio', 'exercise', 'codejercicio', $exercises);
     }
 
-    protected function createViewsModel390(string $viewName = 'ListRegularizacionImpuesto-390'): void
+    protected function createViewsModel390(string $viewName = 'ListRegularizacionImpuesto-390')
     {
-        $this->addView($viewName, 'RegularizacionImpuesto', 'model-390', 'fa-solid fa-book')
+        $this->addView($viewName, 'RegularizacionImpuesto', 'model-390', 'fas fa-book')
             ->addOrderBy(['fechainicio'], 'start-date', 2)
             ->addOrderBy(['codejercicio||periodo'], 'period')
             ->addSearchFields(['codsubcuentaacr', 'codsubcuentadeu']);

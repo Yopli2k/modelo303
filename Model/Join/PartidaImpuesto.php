@@ -42,7 +42,7 @@ class PartidaImpuesto extends JoinModel
     /**
      * Reset the values of all model view properties.
      */
-    public function clear(): void
+    public function clear()
     {
         parent::clear();
         $this->baseimponible = 0.00;
@@ -57,12 +57,12 @@ class PartidaImpuesto extends JoinModel
         $where = [new DataBaseWhere('idasiento', $this->idasiento ?? 0)];
 
         $facturaCliente = new FacturaCliente();
-        if ($facturaCliente->loadWhere($where)) {
+        if ($facturaCliente->loadFromCode('', $where)) {
             return $facturaCliente;
         }
 
         $facturaProveedor = new FacturaProveedor();
-        $facturaProveedor->loadWhere($where);
+        $facturaProveedor->loadFromCode('', $where);
         return $facturaProveedor;
     }
 
@@ -123,29 +123,18 @@ class PartidaImpuesto extends JoinModel
      *
      * @param array $data
      */
-    protected function loadFromData(array $data): void
+    protected function loadFromData(array $data)
     {
         parent::loadFromData($data);
 
-        if ($this->iva > 0 && $this->recargo > 0) {
-            $this->cuotaiva = $this->baseimponible * ($this->iva / 100.0);
-            $this->cuotarecargo = $this->baseimponible * ($this->recargo / 100.0);
-        } elseif ($this->iva > 0) {
-            $this->cuotaiva = $this->codcuentaesp === 'IVAREP'
-                ? $data['haber'] - $data['debe']
-                : $data['debe'] - $data['haber'];
-            $this->cuotarecargo = 0.0;
-        } else {
-            $this->cuotarecargo = $this->codcuentaesp === 'IVAREP'
-                ? $data['haber'] - $data['debe']
-                : $data['debe'] - $data['haber'];
-            $this->cuotaiva = 0.0;
-        }
+        // calculamos iva y recargo
+        $this->cuotaiva = $this->baseimponible * ($this->iva / 100.00);
+        $this->cuotarecargo = $this->baseimponible * ($this->recargo / 100.00);
 
         // si el campo factura está vacío, buscamos la factura con este asiento
         if (empty($this->factura)) {
             $factura = $this->getFactura();
-            if ($factura->id()) {
+            if ($factura->primaryColumnValue()) {
                 $this->factura = $factura->numero;
                 $this->documento = $factura->codigo;
                 $this->codserie = $factura->codserie;

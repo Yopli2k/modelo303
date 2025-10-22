@@ -1,7 +1,7 @@
 <?php
 /**
  * This file is part of Modelo303 plugin for FacturaScripts
- * Copyright (C) 2017-2025 Carlos Garcia Gomez <carlos@facturascripts.com>
+ * Copyright (C) 2017-2024 Carlos Garcia Gomez <carlos@facturascripts.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
@@ -24,12 +24,10 @@ use FacturaScripts\Core\DataSrc\Impuestos;
 use FacturaScripts\Core\DataSrc\Series;
 use FacturaScripts\Core\Lib\ExtendedController\BaseView;
 use FacturaScripts\Core\Lib\ExtendedController\EditController;
-use FacturaScripts\Core\Model\Asiento;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Lib\Accounting\VatRegularizationToAccounting;
 use FacturaScripts\Dinamic\Lib\SubAccountTools;
 use FacturaScripts\Dinamic\Model\Join\PartidaImpuestoResumen;
-use FacturaScripts\Dinamic\Model\Partida;
 use FacturaScripts\Dinamic\Model\RegularizacionImpuesto;
 
 /**
@@ -42,16 +40,13 @@ use FacturaScripts\Dinamic\Model\RegularizacionImpuesto;
 class EditRegularizacionImpuesto extends EditController
 {
     /** @var float */
-    public float $purchases;
+    public $purchases;
 
     /** @var float */
-    public float $sales;
+    public $sales;
 
     /** @var float */
-    public float $total;
-
-    /** @var array */
-    public array $modelo303 = [];
+    public $total;
 
     public function getModelClassName(): string
     {
@@ -63,7 +58,7 @@ class EditRegularizacionImpuesto extends EditController
         $data = parent::getPageData();
         $data['menu'] = 'reports';
         $data['title'] = 'model-303-390';
-        $data['icon'] = 'fa-solid fa-balance-scale-right';
+        $data['icon'] = 'fas fa-balance-scale-right';
         return $data;
     }
 
@@ -72,7 +67,7 @@ class EditRegularizacionImpuesto extends EditController
      *
      * @param PartidaImpuestoResumen[] $data
      */
-    protected function calculateAmounts(array $data): void
+    protected function calculateAmounts(array $data)
     {
         // Init totals values
         $this->sales = 0.0;
@@ -93,11 +88,11 @@ class EditRegularizacionImpuesto extends EditController
         $this->total = $this->sales - $this->purchases;
     }
 
-    protected function createAccountingEntryAction(): void
+    protected function createAccountingEntryAction()
     {
         $reg = new RegularizacionImpuesto();
         $code = $this->request->get('code');
-        if (false === $reg->load($code)) {
+        if (false === $reg->loadFromCode($code)) {
             Tools::log()->warning('record-not-found');
             return;
         }
@@ -126,22 +121,24 @@ class EditRegularizacionImpuesto extends EditController
     /**
      * Add the view set.
      */
-    protected function createViews(): void
+    protected function createViews()
     {
         parent::createViews();
         $this->setTabsPosition('bottom');
 
         $this->createViewsTaxSummary();
+        $this->createViewsTaxLine('ListPartidaImpuesto-1', 'purchases', 'fas fa-sign-in-alt');
+        $this->createViewsTaxLine('ListPartidaImpuesto-2', 'sales', 'fas fa-sign-out-alt');
         $this->createViewsEntryLine();
     }
 
-    protected function createViewsEntryLine(string $viewName = 'ListPartida'): void
+    protected function createViewsEntryLine(string $viewName = 'ListPartida')
     {
-        $this->addListView($viewName, 'Partida', 'accounting-entry', 'fa-solid fa-balance-scale');
+        $this->addListView($viewName, 'Partida', 'accounting-entry', 'fas fa-balance-scale');
         $this->disableButtons($viewName, true);
     }
 
-    protected function createViewsTaxLine(string $viewName, string $caption, string $icon): void
+    protected function createViewsTaxLine(string $viewName, string $caption, string $icon)
     {
         $this->addListView($viewName, 'Join\PartidaImpuesto', $caption, $icon)
             ->addSearchFields(['partidas.concepto'])
@@ -152,13 +149,13 @@ class EditRegularizacionImpuesto extends EditController
         $this->disableButtons($viewName);
     }
 
-    protected function createViewsTaxSummary(string $viewName = 'ListPartidaImpuestoResumen'): void
+    protected function createViewsTaxSummary(string $viewName = 'ListPartidaImpuestoResumen')
     {
-        $this->addHtmlView($viewName, 'Modelo303', 'Impuesto', 'summary', 'fa-solid fa-list-alt');
+        $this->addListView($viewName, 'Join\PartidaImpuestoResumen', 'summary', 'fas fa-list-alt');
         $this->disableButtons($viewName);
     }
 
-    protected function disableButtons(string $viewName, bool $clickable = false): void
+    protected function disableButtons(string $viewName, bool $clickable = false)
     {
         $this->setSettings($viewName, 'btnDelete', false);
         $this->setSettings($viewName, 'btnNew', false);
@@ -173,7 +170,7 @@ class EditRegularizacionImpuesto extends EditController
      *
      * @return bool
      */
-    protected function execPreviousAction($action): bool
+    protected function execPreviousAction($action)
     {
         switch ($action) {
             case 'create-accounting-entry':
@@ -184,13 +181,13 @@ class EditRegularizacionImpuesto extends EditController
         return parent::execPreviousAction($action);
     }
 
-    protected function exportAction(): void
+    protected function exportAction()
     {
         $this->exportManager->setOrientation('landscape');
         parent::exportAction();
     }
 
-    protected function getListPartida(BaseView $view): void
+    protected function getListPartida(BaseView $view)
     {
         $idasiento = $this->getViewModelValue('EditRegularizacionImpuesto', 'idasiento');
         if (!empty($idasiento)) {
@@ -199,7 +196,7 @@ class EditRegularizacionImpuesto extends EditController
         }
     }
 
-    protected function getListPartidaImpuesto(BaseView $view, int $group): void
+    protected function getListPartidaImpuesto(BaseView $view, int $group)
     {
         $id = $this->getViewModelValue($this->getMainViewName(), 'idregiva');
         if (!empty($id)) {
@@ -209,163 +206,19 @@ class EditRegularizacionImpuesto extends EditController
         }
     }
 
-    protected function getListPartidaImpuestoResumen(BaseView $view): void
+    protected function getListPartidaImpuestoResumen(BaseView $view)
     {
-        $impuestos = Impuestos::all();
-
-        // obtenemos los codigos de subcuentas de los impuestos
-        $subcuentas = array_values(array_unique(array_filter(array_merge(
-            array_column($impuestos, 'codsubcuentarep'),
-            array_column($impuestos, 'codsubcuentasop'),
-        ))));
-
-        // Obtenemos los asientos para poder filtrar
-        // por fecha. Asi nos aseguramos que se filtra
-        // primero por fecha de devengo y si no existe
-        // por fecha de factura
-        $asientos = Asiento::all([
-            new DataBaseWhere('codejercicio', $this->getModel()->codejercicio),
-            new DataBaseWhere('fecha', $this->getModel()->fechainicio, '>='),
-            new DataBaseWhere('fecha', $this->getModel()->fechafin, '<'),
-        ]);
-        $idsAsientos = array_unique(array_column($asientos, Asiento::primaryColumn()));
-
-        if(empty($idsAsientos)) {
-            Tools::log()->warning('accounting-entry-not-found');
-            return;
+        $id = $this->getViewModelValue($this->getMainViewName(), 'idregiva');
+        if (!empty($id)) {
+            $where = $this->getPartidaImpuestoWhere(SubAccountTools::SPECIAL_GROUP_TAX_ALL);
+            $orderBy = [
+                'cuentasesp.descripcion' => 'ASC',
+                'partidas.iva' => 'ASC',
+                'partidas.recargo' => 'ASC'
+            ];
+            $view->loadData(false, $where, $orderBy);
+            $this->calculateAmounts($view->cursor);
         }
-
-        $partidas = Partida::all([
-            new DataBaseWhere('idasiento', $idsAsientos, 'IN'),
-            new DataBaseWhere('codsubcuenta', $subcuentas, 'IN')
-        ]);
-
-        // agrupamos por subcuenta
-        $partidasAgrupadas = [];
-        foreach ($partidas as $partida) {
-            $partidasAgrupadas[$partida->codsubcuenta][] = $partida;
-        }
-
-        // inicializamos el modelo303
-        $this->modelo303 = [];
-        for ($i = 0; $i <= 200; $i++) {
-            $this->modelo303[sprintf('%02d', $i)] = 0.00;
-        }
-
-        // set default values
-        $this->modelo303['02'] = 4.00;
-        $this->modelo303['05'] = 10.00;
-        $this->modelo303['08'] = 21.00;
-        $this->modelo303['157'] = 1.75;
-        $this->modelo303['169'] = 0.5;
-        $this->modelo303['20'] = 1.4;
-        $this->modelo303['23'] = 5.2;
-
-        // obtenemos los códigos de subcuentas agrupados según tipo iva
-        // esto lo hacemos por si existen varios impuestos
-        // del mismo iva y distintas subcuentas
-        $subcuentasSegunIVA = [];
-        foreach ($impuestos as $impuesto) {
-            $subcuentasSegunIVA[$impuesto->iva]['repercutido'][] = $impuesto->codsubcuentarep;
-            $subcuentasSegunIVA[$impuesto->iva]['soportado'][] = $impuesto->codsubcuentasop;
-        }
-
-        // obtenemos los codigos de subcuentas agrupados según tipo recargo
-        // esto lo hacemos por si existen varios impuestos
-        // del mismo recargo y distintas subcuentas
-        $subcuentasSegunRecargo = [];
-        foreach ($impuestos as $impuesto) {
-            $subcuentasSegunRecargo[$impuesto->recargo]['repercutido'][] = $impuesto->codsubcuentarepre;
-            $subcuentasSegunRecargo[$impuesto->recargo]['soportado'][] = $impuesto->codsubcuentasopre;
-        }
-
-        foreach ($partidasAgrupadas as $subcuenta => $movimientos) {
-            foreach ($movimientos as $mov) {
-                // IVA 4%
-                if (in_array($subcuenta, $subcuentasSegunIVA[4]['repercutido'])) {
-                    $this->modelo303['01'] += $mov->baseimponible;
-                    $this->modelo303['03'] += $mov->haber;
-                }
-
-                // IVA 10%
-                if (in_array($subcuenta, $subcuentasSegunIVA[10]['repercutido'])) {
-                    $this->modelo303['04'] += $mov->baseimponible;
-                    $this->modelo303['06'] += $mov->haber;
-                }
-
-                // IVA 21%
-                if (in_array($subcuenta, $subcuentasSegunIVA[21]['repercutido'])) {
-                    $this->modelo303['07'] += $mov->baseimponible;
-                    $this->modelo303['09'] += $mov->haber;
-                }
-
-                // IVA 0%
-                if (in_array($subcuenta, $subcuentasSegunIVA[0]['repercutido'])) {
-                    $this->modelo303['150'] += $mov->baseimponible;
-                    $this->modelo303['152'] += $mov->haber;
-                }
-
-                // RECARGO 1.75%
-                if (in_array($subcuenta, $subcuentasSegunRecargo[1.75]['repercutido'])) {
-                    $this->modelo303['156'] += $mov->baseimponible;
-                    $this->modelo303['158'] += $mov->haber;
-                }
-
-                // RECARGO 0.5%
-                if (in_array($subcuenta, $subcuentasSegunRecargo[0.5]['repercutido'])) {
-                    $this->modelo303['168'] += $mov->baseimponible;
-                    $this->modelo303['170'] += $mov->haber;
-                }
-
-                // RECARGO 1.4%
-                if (in_array($subcuenta, $subcuentasSegunRecargo[1.4]['repercutido'])) {
-                    $this->modelo303['19'] += $mov->baseimponible;
-                    $this->modelo303['21'] += $mov->haber;
-                }
-
-                // RECARGO 5.2%
-                if (in_array($subcuenta, $subcuentasSegunRecargo[5.2]['repercutido'])) {
-                    $this->modelo303['22'] += $mov->baseimponible;
-                    $this->modelo303['24'] += $mov->haber;
-                }
-            }
-        }
-
-        // Total cuota devengada
-        $this->modelo303['27'] = $this->modelo303['152'] + $this->modelo303['167'] + $this->modelo303['03'] + $this->modelo303['155'] + $this->modelo303['06'] + $this->modelo303['09'] + $this->modelo303['11'] + $this->modelo303['13'] + $this->modelo303['15'] + $this->modelo303['158'] + $this->modelo303['170'] + $this->modelo303['18'] + $this->modelo303['21'] + $this->modelo303['24'] + $this->modelo303['26'];
-
-        /**
-         * IVA DEDUCIBLE
-         */
-
-        // Por cuotas soportadas en operaciones interiores corrientes
-        foreach ($partidasAgrupadas as $subcuenta => $movimientos) {
-            foreach ($movimientos as $mov) {
-                // IVA 4%
-                if (in_array($subcuenta, $subcuentasSegunIVA[4]['soportado'])) {
-                    $this->modelo303['28'] += $mov->baseimponible;
-                    $this->modelo303['29'] += $mov->debe;
-                }
-
-                // IVA 10%
-                if (in_array($subcuenta, $subcuentasSegunIVA[10]['soportado'])) {
-                    $this->modelo303['28'] += $mov->baseimponible;
-                    $this->modelo303['29'] += $mov->debe;
-                }
-
-                // IVA 21%
-                if (in_array($subcuenta, $subcuentasSegunIVA[21]['soportado'])) {
-                    $this->modelo303['28'] += $mov->baseimponible;
-                    $this->modelo303['29'] += $mov->debe;
-                }
-            }
-        }
-
-        // Total a deducir
-        $this->modelo303['45'] = $this->modelo303['29'] + $this->modelo303['31'] + $this->modelo303['33'] + $this->modelo303['35'] + $this->modelo303['37'] + $this->modelo303['39'] + $this->modelo303['41'] + $this->modelo303['42'] + $this->modelo303['43'] + $this->modelo303['44'];
-
-        // Resultado régimen general
-        $this->modelo303['46'] = $this->modelo303['27'] - $this->modelo303['45'];
     }
 
     /**
@@ -377,29 +230,26 @@ class EditRegularizacionImpuesto extends EditController
      */
     protected function getPartidaImpuestoWhere(int $group): array
     {
-        $saTools = new SubAccountTools();
-        $where = [
-            new DataBaseWhere('asientos.codejercicio', $this->getModel()->codejercicio),
-            new DataBaseWhere('asientos.fecha', $this->getModel()->fechainicio, '>='),
-            new DataBaseWhere('asientos.fecha', $this->getModel()->fechafin, '<='),
-            new DataBaseWhere('series.siniva', false),
-            new DataBaseWhere('partidas.baseimponible', 0, '!='),
-            new DataBaseWhere('COALESCE(partidas.iva, 0)', 0, '>', 'OR'),
-            $saTools->whereForSpecialAccounts('COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)', $group)
-        ];
-
         // obtenemos todos los ids de los asientos de las regularizaciones
         $ids = [];
-        foreach (RegularizacionImpuesto::all() as $reg) {
+        $reg = new RegularizacionImpuesto();
+        foreach ($reg->all([], [], 0, 0) as $reg) {
             if ($reg->idasiento) {
                 $ids[] = $reg->idasiento;
             }
         }
-        if (!empty($ids)) {
-            array_unshift($where, new DataBaseWhere('asientos.idasiento', implode(',', $ids), 'NOT IN'));
-        }
 
-        return $where;
+        $subAccountTools = new SubAccountTools();
+        return [
+            new DataBaseWhere('asientos.idasiento', implode(',', $ids), 'NOT IN'),
+            new DataBaseWhere('asientos.codejercicio', $this->getModel()->codejercicio),
+            new DataBaseWhere('asientos.fecha', $this->getModel()->fechainicio, '>='),
+            new DataBaseWhere('asientos.fecha', $this->getModel()->fechafin, '<='),
+            new DataBaseWhere('COALESCE(series.siniva, 0)', 0),
+            new DataBaseWhere('partidas.baseimponible', 0, '!='),
+            new DataBaseWhere('COALESCE(partidas.iva, 0)', 0, '>', 'OR'),
+            $subAccountTools->whereForSpecialAccounts('COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)', $group)
+        ];
     }
 
     /**
@@ -408,7 +258,7 @@ class EditRegularizacionImpuesto extends EditController
      * @param string $viewName
      * @param BaseView $view
      */
-    protected function loadData($viewName, $view): void
+    protected function loadData($viewName, $view)
     {
         switch ($viewName) {
             case 'EditRegularizacionImpuesto':
@@ -446,7 +296,7 @@ class EditRegularizacionImpuesto extends EditController
                 'action' => 'create-accounting-entry',
                 'color' => 'success',
                 'confirm' => true,
-                'icon' => 'fa-solid fa-balance-scale',
+                'icon' => 'fas fa-balance-scale',
                 'label' => 'create-accounting-entry',
                 'row' => 'actions'
             ]);

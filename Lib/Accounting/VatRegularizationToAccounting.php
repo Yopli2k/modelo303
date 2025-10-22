@@ -20,8 +20,6 @@
 namespace FacturaScripts\Plugins\Modelo303\Lib\Accounting;
 
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
-use FacturaScripts\Core\Model\FacturaCliente;
-use FacturaScripts\Core\Model\FacturaProveedor;
 use FacturaScripts\Core\Model\RegularizacionImpuesto;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Dinamic\Lib\SubAccountTools;
@@ -38,18 +36,13 @@ use FacturaScripts\Dinamic\Model\Subcuenta;
 class VatRegularizationToAccounting
 {
     /** @var float */
-    private float $credit = 0.0;
+    private $credit = 0.0;
 
     /** @var float */
-    private float $debit = 0.0;
+    private $debit = 0.0;
 
     public function generate(RegularizacionImpuesto &$reg): bool
     {
-        if(false === $this->checkInvoicesWithoutAccEntry($reg)){
-            Tools::log()->warning('invoices-without-acc-entry');
-            return false;
-        }
-
         // creamos el asiento contable
         $accEntry = new Asiento();
         $accEntry->codejercicio = $reg->codejercicio;
@@ -64,9 +57,10 @@ class VatRegularizationToAccounting
         if ($this->addAccountingTaxLines($accEntry, $reg) &&
             $this->addAccountingResultLine($accEntry, $reg) &&
             $accEntry->isBalanced()) {
+
             $accEntry->importe = max([$this->debit, $this->credit]);
             if ($accEntry->save()) {
-                $reg->idasiento = $accEntry->id();
+                $reg->idasiento = $accEntry->primaryColumnValue();
                 $reg->fechaasiento = $accEntry->fecha;
                 return true;
             }
@@ -83,7 +77,7 @@ class VatRegularizationToAccounting
 
         // si el debe es mayor que el haber, seleccionamos la cuenta de acreedores
         $id = $this->debit >= $this->credit ? $reg->idsubcuentaacr : $reg->idsubcuentadeu;
-        if (false === $subaccount->load($id)) {
+        if (false === $subaccount->loadFromCode($id)) {
             return false;
         }
 
@@ -103,14 +97,14 @@ class VatRegularizationToAccounting
     {
         foreach ($this->getSubtotals($reg) as $idsubcuenta => $total) {
             $subaccount = new Subcuenta();
-            if (false === $subaccount->load($idsubcuenta)) {
+            if (false === $subaccount->loadFromCode($idsubcuenta)) {
                 return false;
             }
 
             $newLine = $accEntry->getNewLine();
             $newLine->setAccount($subaccount);
-            $newLine->debe = round($total['debe'], Tools::settings('default', 'decimals'));
-            $newLine->haber = round($total['haber'], Tools::settings('default', 'decimals'));
+            $newLine->debe = round($total['debe'], FS_NF0);
+            $newLine->haber = round($total['haber'], FS_NF0);
             if ($newLine->save()) {
                 $this->debit += $newLine->debe;
                 $this->credit += $newLine->haber;
@@ -156,33 +150,5 @@ class VatRegularizationToAccounting
         }
 
         return $subtotals;
-    }
-
-    /**
-     * Comprueba si hay facturas sin asiento contable
-     *
-     * @param $reg
-     *
-     * @return bool
-     */
-    private function checkInvoicesWithoutAccEntry($reg): bool
-    {
-        $where = [
-            new DataBaseWhere('codejercicio', $reg->codejercicio),
-            new DataBaseWhere('idempresa', $reg->idempresa),
-            new DataBaseWhere('fecha', $reg->fechainicio, '>='),
-            new DataBaseWhere('fecha', $reg->fechafin, '<='),
-            new DataBaseWhere('idasiento', 'IS NULL')
-        ];
-
-        $facturasClienteSinAsiento = FacturaCliente::all($where);
-
-        $facturasProveedorSinAsiento = FacturaProveedor::all($where);
-
-        if (count($facturasClienteSinAsiento) > 0 || count($facturasProveedorSinAsiento) > 0) {
-            return false;
-        }
-
-        return true;
     }
 }

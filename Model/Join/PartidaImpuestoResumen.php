@@ -1,7 +1,7 @@
 <?php
 /**
  * This file is part of Modelo303 plugin for FacturaScripts
- * Copyright (C) 2017-2025 Carlos Garcia Gomez <carlos@facturascripts.com>
+ * Copyright (C) 2017-2024 Carlos Garcia Gomez <carlos@facturascripts.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
@@ -45,7 +45,7 @@ class PartidaImpuestoResumen extends JoinModel
     /**
      * Reset the values of all model view properties.
      */
-    public function clear(): void
+    public function clear()
     {
         parent::clear();
         $this->baseimponible = 0.0;
@@ -87,9 +87,8 @@ class PartidaImpuestoResumen extends JoinModel
         return 'asientos.codejercicio,'
             . 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp),'
             . 'cuentasesp.descripcion,'
-            . 'partidas.codsubcuenta,'
-            . 'subcuentas.descripcion,'
             . 'partidas.idsubcuenta,'
+            . 'partidas.codsubcuenta,'
             . 'partidas.iva,'
             . 'partidas.recargo';
     }
@@ -130,25 +129,11 @@ class PartidaImpuestoResumen extends JoinModel
      *
      * @param array $data
      */
-    protected function loadFromData(array $data): void
+    protected function loadFromData($data)
     {
         parent::loadFromData($data);
-
-        if ($this->iva > 0 && $this->recargo > 0) {
-            $this->cuotaiva = $this->baseimponible * ($this->iva / 100.0);
-            $this->cuotarecargo = $this->baseimponible * ($this->recargo / 100.0);
-        } elseif ($this->iva > 0) {
-            $this->cuotaiva = $this->codcuentaesp === 'IVAREP'
-                ? $data['haber'] - $data['debe']
-                : $data['debe'] - $data['haber'];
-            $this->cuotarecargo = 0.0;
-        } else {
-            $this->cuotarecargo = $this->codcuentaesp === 'IVAREP'
-                ? $data['haber'] - $data['debe']
-                : $data['debe'] - $data['haber'];
-            $this->cuotaiva = 0.0;
-        }
-
+        $this->cuotaiva = $this->baseimponible * ($this->iva / 100.0);
+        $this->cuotarecargo = $this->baseimponible * ($this->recargo / 100.0);
         $this->total = $this->baseimponible + $this->cuotaiva + $this->cuotarecargo;
     }
 }
