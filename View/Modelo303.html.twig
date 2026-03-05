@@ -1,11 +1,11 @@
 <div class="row">
-    <div class="col-12 col-md-6">
+    <div class="col-6">
         <div class="card">
             <div class="card-header">
                 {{ trans('vat-accrued') }}
             </div>
             <table class="table table-bordered table-sm">
-                <thead class="table-light text-center">
+                <thead class="text-center">
                 <tr>
                     <th></th>
                     <th>{{ trans('tax-base') }}</th>
@@ -22,7 +22,7 @@
                         <strong>{{ fsc.modelo303.casillaStr('150') }}</strong></td>
                     <td class="text-center">151</td>
                     <td class="text-center">
-                        <strong>{{ fsc.modelo303.casillaStr('151') }}</strong></td>
+                        <strong>{{ fsc.modelo303.casillaStr('151', true) }}</strong></td>
                     <td class="text-center">152</td>
                     <td class="text-end">
                         <strong>{{ fsc.modelo303.casillaStr('152') }}</strong></td>
@@ -78,7 +78,7 @@
                 <tr>
                     <td class="text-center">07</td>
                     <td class="text-end">
-                        <strong>{{ fsc.modelo303.casilla('07') }}</strong>
+                        <strong>{{ fsc.modelo303.casillaStr('07') }}</strong>
                     </td>
                     <td class="text-center">08</td>
                     <td class="text-center">
@@ -195,7 +195,7 @@
                 </tr>
                 </tbody>
             </table>
-            <table class="table table-bordered table-sm table-striped align-middle mb-0">
+            <table class="table table-bordered table-sm mb-0">
                 <tbody>
                 <tr>
                     <td>{{ trans('total-accrued-fee') }}</td>
@@ -208,12 +208,12 @@
             </table>
         </div>
     </div>
-    <div class="col-12 col-md-6">
+    <div class="col-6">
         <div class="card mb-3">
             <div class="card-header">
                 {{ trans('deductible-vat') }}
             </div>
-            <table class="table table-bordered table-sm table-striped align-middle">
+            <table class="table table-bordered table-sm">
                 <thead class="text-center">
                 <tr>
                     <th></th>
@@ -225,7 +225,7 @@
                 </thead>
                 <tbody>
                 <tr>
-                    <td>{{ trans('deductible-vat-28') }}</td>
+                    <td>{{ trans('deductible-vat') }}</td>
                     <td class="text-center">28</td>
                     <td class="text-end">
                         <strong>{{ fsc.modelo303.casillaStr('28') }}</strong>

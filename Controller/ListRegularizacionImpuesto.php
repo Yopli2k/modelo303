@@ -16,7 +16,9 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 namespace FacturaScripts\Plugins\Modelo303\Controller;
+
 use FacturaScripts\Core\Base\DataBase\DataBaseWhere;
 use FacturaScripts\Core\DataSrc\Empresas;
 use FacturaScripts\Core\Lib\ExtendedController\ListController;
@@ -29,11 +31,6 @@ use FacturaScripts\Core\Tools;
  */
 class ListRegularizacionImpuesto extends ListController
 {
-    /**
-     * Return the basic data for this page.
-     *
-     * @return array
-     */
     public function getPageData(): array
     {
         $data = parent::getPageData();
@@ -52,11 +49,17 @@ class ListRegularizacionImpuesto extends ListController
         $this->createViewsModel390();
     }
 
-    protected function createViewsModel303(): void
+    /**
+     * Create the list view for Model 303.
+     *
+     * @param string $viewName
+     * @return void
+     */
+    protected function createViewsModel303(string $viewName = 'ListRegularizacionImpuesto'): void
     {
         $exercises = $this->codeModel->all('ejercicios', 'codejercicio', 'nombre');
-        $this->addView('ListRegularizacionImpuesto', 'RegularizacionImpuesto', 'model-303', 'fa-solid fa-book')
-            // Search and Order
+        $this->addView($viewName, 'RegularizacionImpuesto', 'model-303', 'fa-solid fa-book')
+            // Search and Orderby
             ->addSearchFields(['codsubcuentaacr', 'codsubcuentadeu'])
             ->addOrderBy(['fechainicio'], 'start-date', 2)
             ->addOrderBy(['codejercicio||periodo'], 'period')
@@ -68,14 +71,20 @@ class ListRegularizacionImpuesto extends ListController
             ]);
     }
 
-    protected function createViewsModel390(): void
+    /**
+     * Create the list view for Model 390.
+     *
+     * @param string $viewName
+     * @return void
+     */
+    protected function createViewsModel390(string $viewName = 'ListRegularizacionImpuesto-390'): void
     {
         $exercises = $this->codeModel->all('ejercicios', 'codejercicio', 'nombre');
-        $this->addView('ListRegularizacionImpuesto-390', 'RegularizacionImpuesto', 'model-390', 'fa-solid fa-book')
-            // Search and Order
-            ->addSearchFields(['codsubcuentaacr', 'codsubcuentadeu'])
+        $this->addView($viewName, 'RegularizacionImpuesto', 'model-390', 'fa-solid fa-book')
+            // Search and Orderby
             ->addOrderBy(['fechainicio'], 'start-date', 2)
             ->addOrderBy(['codejercicio||periodo'], 'period')
+            ->addSearchFields(['codsubcuentaacr', 'codsubcuentadeu'])
             // Filters
             ->addFilterSelect('idempresa', 'company', 'idempresa', Empresas::codeModel())
             ->addFilterSelect('codejercicio', 'exercise', 'codejercicio', $exercises)

@@ -24,36 +24,9 @@ use FacturaScripts\Core\Model\Base\JoinModel;
  * Auxiliary model to load a resume of accounting entries with VAT
  *
  * @author Jose Antonio Cuello Principal <yopli2000@gmail.com>
- * @author Carlos García Gómez           <carlos@facturascripts.com>
- *
- * @property float $baseimponible
- * @property string $codcuentaesp
- * @property string $codejercicio
- * @property string $codsubcuenta
- * @property float $cuotaiva
- * @property float $cuotarecargo
- * @property string $descripcion
- * @property int $idsubcuenta
- * @property float $iva
- * @property float $recargo
- * @property float $total
  */
 class PartidaImpuestoResumen extends JoinModel
 {
-    /**
-     * Reset the values of all model view properties.
-     */
-    public function clear(): void
-    {
-        parent::clear();
-        $this->baseimponible = 0.0;
-        $this->iva = 0.0;
-        $this->recargo = 0.0;
-        $this->cuotaiva = 0.0;
-        $this->cuotarecargo = 0.0;
-        $this->total = 0.0;
-    }
-
     /**
      * Returns an array of fields for the select clausule.
      *
@@ -62,18 +35,19 @@ class PartidaImpuestoResumen extends JoinModel
     protected function getFields(): array
     {
         return [
-            'codejercicio' => 'asientos.codejercicio',
-
             'codsubcuenta' => 'partidas.codsubcuenta',
-            'idsubcuenta' => 'partidas.idsubcuenta',
-            'iva' => 'partidas.iva',
-            'recargo' => 'partidas.recargo',
+            'iva' => 'COALESCE(partidas.iva, 0)',
+            'recargo' => 'COALESCE(partidas.recargo, 0)',
+
+            'descripcion' => 'subcuentas.descripcion',
 
             'codcuentaesp' => 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)',
+            'tipo_desc' => 'cuentasesp.descripcion',
 
-            'baseimponible' => 'SUM(partidas.baseimponible)',
-            'debe' => 'SUM(partidas.debe)',
-            'haber' => 'SUM(partidas.haber)',
+            'baseimponible' => 'ROUND(SUM(partidas.baseimponible), 2)',
+            'debe' => 'ROUND(SUM(partidas.debe), 2)',
+            'haber' => 'ROUND(SUM(partidas.haber), 2)',
+            'cuota' => 'ROUND(SUM(' . $this->sqlForCuota() . '), 2)',
         ];
     }
 
@@ -84,12 +58,12 @@ class PartidaImpuestoResumen extends JoinModel
      */
     protected function getGroupFields(): string
     {
-        return 'asientos.codejercicio,'
-            . 'partidas.codsubcuenta,'
-            . 'partidas.idsubcuenta,'
-            . 'partidas.iva,'
-            . 'partidas.recargo,'
-            . 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)';
+        return 'partidas.codsubcuenta'
+            . ', partidas.iva'
+            . ', partidas.recargo'
+            . ', subcuentas.descripcion'
+            . ', COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)'
+            . ', cuentasesp.descripcion';
     }
 
     /**
@@ -99,12 +73,12 @@ class PartidaImpuestoResumen extends JoinModel
      */
     protected function getSQLFrom(): string
     {
-        return 'asientos'
-            . ' LEFT JOIN partidas ON partidas.idasiento = asientos.idasiento'
-            . ' LEFT JOIN subcuentas ON subcuentas.idsubcuenta = partidas.idsubcuenta'
-            . ' LEFT JOIN cuentas ON cuentas.idcuenta = subcuentas.idcuenta'
-            . ' LEFT JOIN cuentasesp ON cuentasesp.codcuentaesp = COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)'
-            . ' LEFT JOIN series ON series.codserie = partidas.codserie';
+        return 'partidas'
+            . ' INNER JOIN asientos on asientos.idasiento = partidas.idasiento'
+            . ' INNER JOIN subcuentas on subcuentas.idsubcuenta = partidas.idsubcuenta'
+            . ' INNER JOIN cuentas on cuentas.idcuenta = subcuentas.idcuenta'
+            . ' LEFT JOIN cuentasesp on cuentasesp.codcuentaesp = coalesce(subcuentas.codcuentaesp, cuentas.codcuentaesp)'
+            . ' LEFT JOIN series on series.codserie = partidas.codserie';
     }
 
     /**
@@ -115,8 +89,8 @@ class PartidaImpuestoResumen extends JoinModel
     protected function getTables(): array
     {
         return [
-            'asientos',
             'partidas',
+            'asientos',
             'subcuentas',
             'cuentas',
             'cuentasesp',
@@ -125,46 +99,15 @@ class PartidaImpuestoResumen extends JoinModel
     }
 
     /**
-     * Assign the values of the $data array to the model properties.
+     * SQL snippet to calculate the cuota field.
      *
-     * @param array $data
+     * @return string
      */
-    protected function loadFromData(array $data): void
+    private function sqlForCuota(): string
     {
-        parent::loadFromData($data);
-
-        // Si tenemos IVA y recargo en el mismo movimiento,
-        // no sabemos cuál es cuál, asi que los calculamos
-        // a partir de la base imponible.
-        if ($this->iva > 0 && $this->recargo > 0) {
-            $this->cuotaiva = $this->baseimponible * ($this->iva / 100.0);
-            $this->cuotarecargo = $this->baseimponible * ($this->recargo / 100.0);
-            $diff = round($this->getCuota($data['debe'], $data['haber']) - ($this->cuotaiva + $this->cuotarecargo), 2);
-            if ($diff !== 0.0) {
-                $this->cuotaiva +=  $diff; // Ajustamos la cuota de IVA
-            }
-        } elseif ($this->iva > 0) {        // Solo tenemos IVA
-            $this->cuotaiva = $this->getCuota($data['debe'], $data['haber']);
-            $this->cuotarecargo = 0.0;
-        } else {                           // Solo tenemos recargo
-            $this->cuotarecargo = $this->getCuota($data['debe'], $data['haber']);
-            $this->cuotaiva = 0.0;
-        }
-
-        $this->total = $this->baseimponible + $this->cuotaiva + $this->cuotarecargo;
-    }
-
-    /**
-     * Get the VAT or surcharge amount from the debit or credit value.
-     *
-     * @param $debe
-     * @param $haber
-     * @return float
-     */
-    private function getCuota($debe, $haber): float
-    {
-        return empty($debe)
-            ? (float)$haber ?? 0.0
-            : (float)$debe  ?? 0.0;
+        return 'CASE WHEN partidas.baseimponible < 0 AND (partidas.debe + partidas.haber) > 0
+                      THEN (partidas.debe + partidas.haber) * -1
+                      ELSE partidas.debe + partidas.haber
+                  END';
     }
 }
