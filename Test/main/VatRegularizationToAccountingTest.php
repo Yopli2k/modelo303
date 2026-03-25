@@ -41,13 +41,40 @@ final class VatRegularizationToAccountingTest extends Modelo303TestCase
     {
         // creamos una factura de proveedor
         $supplierInvoice = $this->getRandomSupplierInvoice('now');
+        $this->addCleanup(static function () use ($supplierInvoice) {
+            if ($supplierInvoice->exists()) {
+                $supplierInvoice->delete();
+            }
+            $subject = $supplierInvoice->getSubject();
+            if ($subject->id()) {
+                $subject->delete();
+            }
+        });
         $this->assertTrue($supplierInvoice->save());
 
         // creamos dos facturas de cliente
         $customerInvoice1 = $this->getRandomCustomerInvoice('+1 day');
+        $this->addCleanup(static function () use ($customerInvoice1) {
+            if ($customerInvoice1->exists()) {
+                $customerInvoice1->delete();
+            }
+            $subject = $customerInvoice1->getSubject();
+            if ($subject->id()) {
+                $subject->delete();
+            }
+        });
         $this->assertTrue($customerInvoice1->save());
 
         $customerInvoice2 = $this->getRandomCustomerInvoice('+2 day');
+        $this->addCleanup(static function () use ($customerInvoice2) {
+            if ($customerInvoice2->exists()) {
+                $customerInvoice2->delete();
+            }
+            $subject = $customerInvoice2->getSubject();
+            if ($subject->id()) {
+                $subject->delete();
+            }
+        });
         $this->assertTrue($customerInvoice2->save());
 
         // creamos una regularización
@@ -55,6 +82,11 @@ final class VatRegularizationToAccountingTest extends Modelo303TestCase
         $reg->codejercicio = $supplierInvoice->codejercicio;
         $reg->periodo = 'T1';
         $this->assertTrue($reg->save());
+        $this->addCleanup(static function () use ($reg) {
+            if ($reg->exists()) {
+                $reg->delete();
+            }
+        });
 
         // generamos el asiento contable
         $generator = new VatRegularizationToAccounting();
@@ -68,13 +100,6 @@ final class VatRegularizationToAccountingTest extends Modelo303TestCase
 
         // comprobamos que se ha eliminado el asiento contable
         $this->assertFalse($reg->getAccountingEntry()->exists());
-
-        $this->assertTrue($supplierInvoice->delete());
-        $this->assertTrue($supplierInvoice->getSubject()->delete());
-        $this->assertTrue($customerInvoice1->delete());
-        $this->assertTrue($customerInvoice2->delete());
-        $this->assertTrue($customerInvoice1->getSubject()->delete());
-        $this->assertTrue($customerInvoice2->getSubject()->delete());
     }
 
     protected function tearDown(): void
