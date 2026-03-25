@@ -1,8 +1,8 @@
 <div class="row">
     <div class="col-6">
-        <div class="card">
+        <div class="card shadow mb-3">
             <div class="card-header">
-                {{ trans('vat-accrued') }}
+                <i class="fa-solid fa-file-invoice-dollar me-2" aria-hidden="true"></i>{{ trans('vat-accrued') }}
             </div>
             <table class="table table-bordered table-sm">
                 <thead class="text-center">
@@ -209,9 +209,9 @@
         </div>
     </div>
     <div class="col-6">
-        <div class="card mb-3">
+        <div class="card shadow mb-3">
             <div class="card-header">
-                {{ trans('deductible-vat') }}
+                <i class="fa-solid fa-arrow-down me-2" aria-hidden="true"></i>{{ trans('deductible-vat') }}
             </div>
             <table class="table table-bordered table-sm">
                 <thead class="text-center">
@@ -249,17 +249,17 @@
                 </tbody>
             </table>
         </div>
-        <div class="card">
-            <div class="card-header">
-                {{ trans('general-regime-result') }}
+        <div class="card border-success shadow">
+            <div class="card-header bg-success text-white fw-bold">
+                <i class="fa-solid fa-calculator me-2" aria-hidden="true"></i>{{ trans('general-regime-result') }}
             </div>
             <table class="table table-bordered table-sm mb-0">
                 <tbody>
-                <tr>
+                <tr class="table-success fw-bold">
                     <td>{{ trans('total-result-of-the-general-regime') }}</td>
                     <td class="text-center">46</td>
                     <td class="text-end">
-                        <strong>{{ fsc.modelo303.casillaStr('46') }}</strong>
+                        <strong class="fs-4 text-success">{{ fsc.modelo303.casillaStr('46') }}</strong>
                     </td>
                 </tr>
                 </tbody>
