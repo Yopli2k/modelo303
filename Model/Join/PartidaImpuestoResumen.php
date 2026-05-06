@@ -36,6 +36,7 @@ class PartidaImpuestoResumen extends JoinModel
     {
         return [
             'codsubcuenta' => 'partidas.codsubcuenta',
+            'idsubcuenta' => 'partidas.idsubcuenta',
             'iva' => 'COALESCE(partidas.iva, 0)',
             'recargo' => 'COALESCE(partidas.recargo, 0)',
 
@@ -44,10 +45,10 @@ class PartidaImpuestoResumen extends JoinModel
             'codcuentaesp' => 'COALESCE(subcuentas.codcuentaesp, cuentas.codcuentaesp)',
             'tipo_desc' => 'cuentasesp.descripcion',
 
-            'baseimponible' => 'ROUND(SUM(partidas.baseimponible), 2)',
-            'debe' => 'ROUND(SUM(partidas.debe), 2)',
-            'haber' => 'ROUND(SUM(partidas.haber), 2)',
-            'cuota' => 'ROUND(SUM(' . $this->sqlForCuota() . '), 2)',
+            'baseimponible' => $this->sqlForRoundedSum('partidas.baseimponible'),
+            'debe' => $this->sqlForRoundedSum('partidas.debe'),
+            'haber' => $this->sqlForRoundedSum('partidas.haber'),
+            'cuota' => $this->sqlForRoundedSum($this->sqlForCuota()),
         ];
     }
 
@@ -59,6 +60,7 @@ class PartidaImpuestoResumen extends JoinModel
     protected function getGroupFields(): string
     {
         return 'partidas.codsubcuenta'
+            . ', partidas.idsubcuenta'
             . ', partidas.iva'
             . ', partidas.recargo'
             . ', subcuentas.descripcion'
@@ -99,6 +101,19 @@ class PartidaImpuestoResumen extends JoinModel
     }
 
     /**
+     * Assign derived compatibility fields used by existing consumers.
+     *
+     * @param array $data
+     */
+    protected function loadFromData(array $data)
+    {
+        parent::loadFromData($data);
+
+        $this->cuotaiva = $this->codcuentaesp === 'IVARRE' ? 0.0 : (float)$this->cuota;
+        $this->cuotarecargo = $this->codcuentaesp === 'IVARRE' ? (float)$this->cuota : 0.0;
+    }
+
+    /**
      * SQL snippet to calculate the cuota field.
      *
      * @return string
@@ -109,5 +124,17 @@ class PartidaImpuestoResumen extends JoinModel
                       THEN (partidas.debe + partidas.haber) * -1
                       ELSE partidas.debe + partidas.haber
                   END';
+    }
+
+    /**
+     * SQL snippet to round aggregated amounts on PostgreSQL and MySQL.
+     *
+     * @param string $field
+     *
+     * @return string
+     */
+    private function sqlForRoundedSum(string $field): string
+    {
+        return 'ROUND(CAST(SUM(' . $field . ') AS DECIMAL(20, 6)), 2)';
     }
 }

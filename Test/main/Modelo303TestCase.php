@@ -12,6 +12,13 @@ class Modelo303TestCase extends TestCase
     use DefaultSettingsTrait;
     use LogErrorsTrait;
 
+    /**
+     * Cleanup callbacks to run after each test in reverse order.
+     *
+     * @var array<int, callable>
+     */
+    private array $cleanupCallbacks = [];
+
     public function setUp(): void
     {
         // inicializamos los modelos para que se creen las
@@ -28,8 +35,21 @@ class Modelo303TestCase extends TestCase
         self::installAccountingPlan();
     }
 
+    protected function addCleanup(callable $callback): void
+    {
+        $this->cleanupCallbacks[] = $callback;
+    }
+
     protected function tearDown(): void
     {
+        while ($callback = array_pop($this->cleanupCallbacks)) {
+            try {
+                $callback();
+            } catch (\Throwable $th) {
+                error_log($th->getMessage());
+            }
+        }
+
         $this->logErrors();
     }
 }

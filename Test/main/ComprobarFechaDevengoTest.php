@@ -24,14 +24,41 @@ class ComprobarFechaDevengoTest extends Modelo303TestCase
     public function testComprobarFechaDevengo()
     {
         $invoiceFechaHoy = $this->getRandomCustomerInvoice();
+        $this->addCleanup(static function () use ($invoiceFechaHoy) {
+            if ($invoiceFechaHoy->exists()) {
+                $invoiceFechaHoy->delete();
+            }
+            $subject = $invoiceFechaHoy->getSubject();
+            if ($subject->id()) {
+                $subject->delete();
+            }
+        });
 
         // creamos una factura con fecha de devengo anterior
         $invoiceFechaDevengoAnterior = $this->getRandomCustomerInvoice();
+        $this->addCleanup(static function () use ($invoiceFechaDevengoAnterior) {
+            if ($invoiceFechaDevengoAnterior->exists()) {
+                $invoiceFechaDevengoAnterior->delete();
+            }
+            $subject = $invoiceFechaDevengoAnterior->getSubject();
+            if ($subject->id()) {
+                $subject->delete();
+            }
+        });
         $invoiceFechaDevengoAnterior->fechadevengo = Tools::date('-1 month');
         $this->assertTrue($invoiceFechaDevengoAnterior->save());
 
         // creamos una factura con fecha de devengo posterior
         $invoiceFechaDevengoPosterior = $this->getRandomCustomerInvoice();
+        $this->addCleanup(static function () use ($invoiceFechaDevengoPosterior) {
+            if ($invoiceFechaDevengoPosterior->exists()) {
+                $invoiceFechaDevengoPosterior->delete();
+            }
+            $subject = $invoiceFechaDevengoPosterior->getSubject();
+            if ($subject->id()) {
+                $subject->delete();
+            }
+        });
         $invoiceFechaDevengoPosterior->fechadevengo = Tools::date('+1 month');
         $this->assertTrue($invoiceFechaDevengoPosterior->save());
 
@@ -65,7 +92,7 @@ class ComprobarFechaDevengoTest extends Modelo303TestCase
         $this->assertEquals($invoiceFechaDevengoPosterior->totaliva, $partida->haber);
 
         // comprobamos que solo obtiene los resultados de todas las facturas
-        $totalIVAFacturasCliente = FacturaCliente::table()->sum('totaliva');
+        $totalIVAFacturasCliente = FacturaCliente::table()->sum('totaliva', 2);
 
         $partidaImpuestoResumen = new PartidaImpuestoResumen();
         $partida = $partidaImpuestoResumen->all([

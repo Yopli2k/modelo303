@@ -28,11 +28,11 @@ use FacturaScripts\Core\Lib\ExtendedController\EditController;
 use FacturaScripts\Core\Lib\SubAccountTools;
 use FacturaScripts\Core\Tools;
 use FacturaScripts\Core\Where;
+use FacturaScripts\Dinamic\Lib\Accounting\VatRegularizationToAccounting;
+use FacturaScripts\Dinamic\Lib\Modelo303;
 use FacturaScripts\Dinamic\Model\FacturaCliente;
 use FacturaScripts\Dinamic\Model\FacturaProveedor;
 use FacturaScripts\Dinamic\Model\RegularizacionImpuesto;
-use FacturaScripts\Dinamic\Lib\Accounting\VatRegularizationToAccounting;
-use FacturaScripts\Dinamic\Lib\Modelo303;
 
 /**
  * @author Carlos García Gómez <carlos@facturascripts.com>
@@ -407,10 +407,12 @@ class EditRegularizacionImpuesto extends EditController
     {
         $viewName = $this->getMainViewName();
         $exists = $this->getModel()->exists();
-        $this->views[$viewName]->disableColumn('tax-credit-account', $exists, 'true')
+
+        $this->tab($viewName)
+            ->disableColumn('tax-credit-account', $exists, 'true')
             ->disableColumn('tax-debit-account', $exists, 'true');
 
-        if (empty($this->getModel()->idasiento)) {
+        if ($exists && empty($this->getModel()->idasiento)) {
             $this->addButton($viewName, [
                 'action' => 'create-accounting-entry',
                 'label' => 'create-accounting-entry',
